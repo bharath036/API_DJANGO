@@ -1,0 +1,241 @@
+################################################################################################
+GIT HUB LINK FOR REFERNECE --> https://github.com/ShubhamSarda/IMDB-Clone-DRF/tree/main
+
+#################################################################################################
+Serializers - GET Request 
+
+Here we created api folder inside  with urls.py, views.py file 
+Here we seen about serializer and api view 
+
+Before views we created serializers.py file 
+#We will map all the values step by step
+#First step we will map by rest framework 
+
+from rest_framework import serializers
+
+#This serializers will map all values
+#We will add validations, add methods etc inside this 
+class MovieSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only = True)
+    name = serializers.CharField()
+    description = serializers.CharField()
+    active = serializers.BooleanField()
+    
+
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
+from watchlist_app.models import Movie
+from watchlist_app.api.serializers import MovieSerializer
+
+@api_view() -> this decorator by default takes GET request if wont mention anything, if we wont use this decorated and proceed we will get error
+
+def movie_list(request):
+    movies = Movie.objects.all()
+    serializer = MovieSerializer(movies, many=True)
+    return Response(serializer.data)
+
+@api_view()
+def movie_details(request,pk):
+    movie = Movie.objects.get(pk=pk)
+    serializer = MovieSerializer(movie)
+    return Response(serializer.data)
+#Learn more about serializers but beter understanding
+-----------------------------------------------------------------------------------------------------
+#Serializers --> POST,PUT,DELETE Request 
+
+Till now we seen @api_view we seen get request only 
+Refer tutorial in drf doc serialization for better understanding 
+#We will map all the values step by step
+#First step we will map by rest framework 
+
+from rest_framework import serializers
+from watchlist_app.models import Movie
+
+#This serializers will map all values
+#We will add validations, add methods etc inside this 
+class MovieSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only = True)
+    name = serializers.CharField()
+    description = serializers.CharField()
+    active = serializers.BooleanField()
+    
+    def create(self, validated_data):
+
+        return Movie.objects.create(**validated_data)
+
+@api_view(['GET','POST'])
+def movie_list(request):
+    if request.method == 'GET':
+        
+        movies = Movie.objects.all()
+        serializer = MovieSerializer(movies, many=True)
+        return Response(serializer.data)
+    
+    if request.method == 'POST':
+        #Get data from user
+        serializer = MovieSerializer(data=request.data)
+        if serializer.is_valid():  #if data is valid we will send data or else error 
+            serializer.save()
+            #The data we are getting below validated_data is because of return in create function in serializers.py
+            return Response(serializer.data)
+        
+        else:
+            return Response(serializer.errors)
+
+Now after adding this and POST method we can see media type and content where we can post or create data 
+
+##################Now lets see about update method and delete 
+
+#We will map all the values step by step
+#First step we will map by rest framework 
+
+from rest_framework import serializers
+from watchlist_app.models import Movie
+
+#This serializers will map all values
+#We will add validations, add methods etc inside this 
+class MovieSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only = True)
+    name = serializers.CharField()
+    description = serializers.CharField()
+    active = serializers.BooleanField()
+    
+    def create(self, validated_data):
+
+        return Movie.objects.create(**validated_data)
+    
+    #instance old updated with new
+    def update(self, instance,validated_data):
+        instance.name = validated_data.get('name',instance.name)
+        instance.description = validated_data.get('name',instance.description)
+        instance.active = validated_data.get('name',instance.active)
+        instance.save()
+        return instance  
+
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
+from watchlist_app.models import Movie
+from watchlist_app.api.serializers import MovieSerializer
+
+@api_view(['GET','POST'])
+def movie_list(request):
+    if request.method == 'GET':
+        
+        movies = Movie.objects.all()
+        serializer = MovieSerializer(movies, many=True)
+        return Response(serializer.data)
+    
+    if request.method == 'POST':
+        #Get data from user
+        serializer = MovieSerializer(data=request.data)
+        if serializer.is_valid():  #if data is valid we will send data or else error 
+            serializer.save()
+            #The data we are getting below validated_data is because of return in create function in serializers.py
+            return Response(serializer.data)
+        
+        else:
+            return Response(serializer.errors)
+        
+        
+#We can't perform POST operation here because we are using individual element here
+@api_view(['GET','PUT','DELETE'])
+def movie_details(request,pk):
+
+    if request.method == 'GET': 
+        movie = Movie.objects.get(pk=pk)
+        serializer = MovieSerializer(movie)
+        return Response(serializer.data)
+    
+    if request.method == 'PUT':
+        #Here we update 
+        #patch means any one can be updated but in put all to rewrite
+        movie = Movie.objects.get(pk=pk)
+        #the above is required or else if we refresh it will come back to old value 
+        serializer = MovieSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors)
+            
+        
+    if request.method == 'DELETE':
+        movie = Movie.objects.get(pk=pk)
+        movie.delete()
+        
+        return Response() #without this we will get error 
+        
+    
+After delete we will get error as we are not returning any response
+
+---------------------------------------------------------------------------------------------------------------------------------
+STATUS CODES
+
+Check for status codes 
+
+  return Response(status=204)
+
+
+  We can use status codes in different positions also
+
+  from rest_framework.response import Response
+from rest_framework.decorators import api_view
+from watchlist_app.models import Movie
+from watchlist_app.api.serializers import MovieSerializer
+from rest_framework import status 
+
+@api_view(['GET','POST'])
+def movie_list(request):
+    if request.method == 'GET':
+        
+        movies = Movie.objects.all()
+        serializer = MovieSerializer(movies, many=True)
+        return Response(serializer.data)
+    
+    if request.method == 'POST':
+        #Get data from user
+        serializer = MovieSerializer(data=request.data)
+        if serializer.is_valid():  #if data is valid we will send data or else error 
+            serializer.save()
+            #The data we are getting below validated_data is because of return in create function in serializers.py
+            return Response(serializer.data)
+        
+        else:
+            return Response(serializer.errors)
+        
+        
+#We can't perform POST operation here because we are using individual element here
+@api_view(['GET','PUT','DELETE'])
+def movie_details(request,pk):
+
+    if request.method == 'GET':
+        try:
+            movie = Movie.objects.get(pk=pk)
+        except Movie.DoesNotExist:
+            return Response({'Error': 'Movie not found'},status=status.HTTP_404_NOT_FOUND)    
+        
+        serializer = MovieSerializer(movie)
+        return Response(serializer.data)
+    
+    if request.method == 'PUT':
+        #Here we update 
+        #patch means any one can be updated but in put all to rewrite
+        movie = Movie.objects.get(pk=pk)
+        #the above is required or else if we refresh it will come back to old value 
+        serializer = MovieSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+            
+        
+    if request.method == 'DELETE':
+        movie = Movie.objects.get(pk=pk)
+        movie.delete()
+        #if we deleted something we will get response in the form of status code
+        return Response(status= status.HTTP_204_NO_CONTENT)
+        
+
+
+------------------------------------------------------------------------------------------------------------------------------------

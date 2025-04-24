@@ -1,0 +1,172 @@
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass --> To activate bypass policy
+pip freeze --> To see what packages installed
+
+We had setup python environment and installed django --> pip install django 
+
+#MODELS AND MIGRATIONS 
+
+
+class Movie(models.Model):
+    name = models.CharField(max_length=50)
+    description = models.CharField(max_length=200)
+    active = models.BooleanField(default=True)
+    
+    def __str__(self):
+        return self.name 
+
+Then we registered in admin.py this model 
+from django.contrib import admin
+from watchlist_app.models import Movie
+
+
+# Register your models here.
+admin.site.register(Movie)
+
+Then after this we need to import models to views and proceed 
+We are sending request and printing console using views
+
+
+def movie_list(request):
+    
+    #We will get all movies in movie table
+    movies = Movie.objects.all()
+    #We can't return them directly, we need to return in json format
+    print(movies)
+
+OUTPUT: <QuerySet [<Movie: Kingkong>]>
+
+print(movies.values()) --> it returns dict or tuple  but we need to return response in JSON format
+
+Like this we get response see below in dictionary format 
+<QuerySet [{'id': 1, 'name': 'Kingkong', 'description': 'Description1', 'active': True}]>
+
+list(movies.values())
+
+
+#######################################################################################################
+Creating JSON RESPONSE - ALL ELEMENTS 
+
+from django.shortcuts import render
+from watchlist_app.models import * 
+from django.http import JsonResponse 
+
+# Create your views here.
+
+def movie_list(request):
+    
+    #We will get all movies in movie table
+    movies = Movie.objects.all()
+    #We can't return them directly, we need to return in json format
+    #print(movies.values())
+    data = {
+        'movies' : list(movies.values())
+    }
+    
+    return JsonResponse(data)
+
+After this if we open http://127.0.0.1:8000/movie/list/ --> we will see the data in json format 
+
+Suppose if we see json format it will be in double quoted " ", here in models we kept default as True but if we
+see in json format it will be small t , true 
+
+Current we returned all the records present .., in next we will see single movie like that 
+
+----------------------------------------------------------------------------------------------------------------------------
+
+#Creating JSON response - Individual ELements 
+
+If we want to access 1st object or any one individual object
+
+
+#Lets extract info for particular object, for this we need to write url for it specific object
+def movie_details(request,pk): #pk is id or any id for particualr object or record, url looks like this http://127.0.0.8000/movie/1 --> 1 is pk that can be changed
+    movie = Movie.objects.get(pk=pk)
+    #print(movie)
+    data = {
+        'name': movie.name,
+        'description' : movie.description,
+        'active':movie.active
+    }
+    return JsonResponse(data)
+    
+If we do each every element manually like this if we hard .., for this we use Django REST framework 
+CRUD --> If we do separately we may make mistakes 
+Install DRF --> Django Rest Framework 
+
+The above is one of the method accessing API's 
+We seen how to create API response directly from django in above lecture or class
+
+The problem here is..,If we want to accept form request we need to get json from front end and store in database separately which needs lots of manual work
+--> See below source code till we learnt till now 
+
+https://github.com/ShubhamSarda/MovieListAPI-Django/blob/main/watchlist_app/views.py
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+def movie_list(request):
+    
+    #We will get all movies in movie table
+    movies = Movie.objects.all()
+    #We can't return them directly, we need to return in json format
+    #print(movies.values())
+    data = {
+        'movies' : list(movies.values())
+    }
+    
+    return JsonResponse(data)
+
+#Lets extract info for particular object, for this we need to write url for it specific object
+def movie_details(request,pk): #pk is id or any id for particualr object or record, url looks like this http://127.0.0.8000/movie/1 --> 1 is pk that can be changed
+    movie = Movie.objects.get(pk=pk)
+    #print(movie)
+    data = {
+        'name': movie.name,
+        'description' : movie.description,
+        'active':movie.active
+    }
+    return JsonResponse(data)
+    
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+DJANGO REST FRAMEWORK 
+
+For notes or brief about this DRF --> www.django-rest-framework.org 
+
+--> Then add rest_framework in installed Apps 
+
+------------------------------------------------------------------------------------------------------------------------------
+Serializers and Deserializers 
+
+
+The data that we store in database like here we created Movie table in that we are storing records in objects form as well we can say 
+
+See the above procees known as serialization 
+Complex Datatype                      | Python Native Datatype |
+--------------------------------------------------------------------------------------------------------------- 
+Model objects -------------------------> Python Dictionary ------------------------------------> JSON DATA 
+    |              serialization                                    Render into json 
+    |
+    |
+    v 
+movies = Movie.objects.all()
+
+Mapping will be done by serialization and than we have to render it 
+If we want to deliver information to user., we are serializing it.
+Deserialization is opposite to it --> if we want to get data from user and need to store it in database known as Deserialization
+
+JSON Data -------------> Python Native Datatype ----------------------> Complex Datatype
+            Parse Data                              De-Serialization
+
+    
+In DRF --> document we can see the info about different concepts in Tutorial 
+
+Type of Serialzers  --> Serialization,ModelSerializer
+
+Types of views --> Class based views --> here we use API_view inherit it , Function Based views --> here we use @api_view  
+
+Working with API's --> How to access API's --> DRF Browsable API ,Postman(most companies use it), HTTPie(mostly not recommandable as we need to deal them in cmd, terminal mostly)
+
+Function Based views --> @api_view()
+
+Class Based Views --> APIView --> Generic views, Mixins, Concrete View Classes, ViewSets 
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

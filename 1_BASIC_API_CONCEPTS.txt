@@ -1,0 +1,101 @@
+#Understanding API's 
+
+API'S is a middle man --> connecting two apps or communication between to systems.
+Ex : 1.)--> If we take 2 apps UBER and GOOGLE MAPS --> both communicate using APT'S 
+2.) Restarant Example --> We are client , waiter as API, KITCHEN as server 
+Client requests for food and API says in the kitchen and in return we get food, as response from kitchen 
+
+They are 3 types of API'S
+1.) Private  
+2.) Partner 
+3.) Public
+
+1.) Private --> within Organization
+
+2.) Partner --> within business( between partners) , Ex: Instagram API --> once they approve we can use it we have to say our requirements, Uber using google maps 
+
+3.) Public --> Any 3rd party app using this app 
+
+Suppose we created a web app using Python django connected to database.., now if we want to create android app or ios app or
+desktop app we no need to create database again and again --> we can use api here by creating it 
+When we are talking about api connectioin --> we are taking about languate JSON.., we can also use XML
+
+Suppose for example if we take prime video they have partner with imdb to show movie ratings., they have connected with imdb with API's 
+If we search for imdb developer it is particulary developed for prime video which they(prime) can access it 
+As well as ..,IMDB also have some private api's 
+
+Some API'S are Open weather api, coin market cap this are public available API'S 
+
+For example --> Amazon have one single backend connected with SQL .., Amazon connected with 3rd party api to show products, here we can see 3 types of API's 
+
+Movie imdb clone app 
+Request/ Response --> if we request .., data will sent in json format and in return we will get json format 
+Why json? because we are using it in middle to communicate.
+
+
+EX:- Suppose if we created E-commerce app and we are using amazon, Ebay,Flipkart apis to get data of particular products to show the products on our website 
+We are consumer here as we are getting data about products from them.
+Each companies have their own documentationand they have set of rules.., to send a rate limit means in particular time how many reuests accepted and response sent.
+We are consumer and they are provider 
+
+Our aim is to be provider.., means we are creating the api and providing 
+For consuming.., we don't need any specific framework 
+For creating we need to know many things 
+How to create API?
+How to integrate with front end?
+How others can connect to our API? 
+
+Understanding basics of URL ?
+Ex: --> here we are using differnt multiple movie imdb links 
+
+We will follow a structure 
+https://www.api.movielist.com/movies/ --> all movies list 
+
+https://www.api.movielist.com/movies/127 --> 127 indicates some particular movie 
+
+https://www.api.movielist.com/movies/127/reviews/ --> review of that particular movie
+
+https://www.api.movielist.com/movies/127/reviews/?limit=20  --> this means we need only 20 reviews of this particular movies 
+
+When we are working with urls we will see common and uncommon part 
+supporse if we take above urls 
+
+https://www.api.movielist.com/movies/127/reviews/?limit=20  
+
+Here base url --> https://www.api.movielist.com
+End point --> movies/127/reviews/?limit=20  --> if we say request, we are sending request to this end point or any end point like this 
+
+####################################################################################################################################################################
+#Understanding REST API
+
+REST is an architecture that follow some patterns 
+
+REPRESENTATIONAL STATE TRANSPER 
+
+If we design API using REST architecture we get REST API 
+
+REST have some set of rules --> if we follow them we get REST API 
+
+Regarding REST -->
+If we follow below point to create a api to design then we design REST API  
+1.) ENDPOINT --> base url, endpoint 
+2.) METHOD --> CRUD , HTTP methods --> CREATE - POST(create new element), READ - GET(if we get list of movies), Update - PUT/ PATCH(update movie) , DELETE-DELETE
+3.) HEADERS --> status code,if we send any request like get or post , we will get status code , example if we send get request if url found we get get 200 ok
+4.)THE DATA(THE BODY) --> JSON format,We follow format of JSON to send, get data in this format. We can also use XML format. B ut generally and mostly we use JSON .
+
+
+One unique thing we observer while we design api .., the url we can observer that api or developer. something like this 
+
+https://www.api.movielist.com/movies/127/reviews/?limit=20 
+
+Understanding URL --> 
+Complete list of movies 
+https://www.api.movielist.com/movies/  --> List movies  
+We will send GET request, POST request add new element to list , delete all movies but no one can do that  
+Here we can't perform update/delete in the above list of movies 
+
+
+Particular movie 
+https://www.api.movieslist.com/movies/127/ --> individal movie 
+GET , PUT, DELETE --> this methods we can do here 
+
