@@ -1,5 +1,6 @@
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass --> To activate bypass policy
 pip freeze --> To see what packages installed
+superuser --> kalakoti/password
 
 We had setup python environment and installed django --> pip install django 
 

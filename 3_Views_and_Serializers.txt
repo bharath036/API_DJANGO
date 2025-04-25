@@ -239,3 +239,399 @@ def movie_details(request,pk):
 
 
 ------------------------------------------------------------------------------------------------------------------------------------
+APIView Class
+
+API guide --> class based views 
+
+from rest_framework.response import Response
+#from rest_framework.decorators import api_view
+from rest_framework.views import APIView
+from watchlist_app.models import Movie
+from watchlist_app.api.serializers import MovieSerializer
+from rest_framework import status 
+
+#Class Based View
+class MovieListAV(APIView):
+    
+    def get(self,request):
+        movies = Movie.objects.all()
+        serialzer = MovieSerializer(movies, many = True)
+        return Response(serialzer.data)
+    
+    def post(self,request):
+        serializer = MovieSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors)
+        
+        
+class MovieDetail(APIView):
+    
+    def get(self,request):
+        try:
+            movie = Movie.objects.get(pk=pk)
+        except Movie.DoesNotExist:
+            return Response({'Error': 'Movie not found'},status=status.HTTP_404_NOT_FOUND)    
+        
+        serializer = MovieSerializer(movie)
+        return Response(serializer.data)
+        
+        
+    def put(self,request):
+        movie = Movie.objects.get(pk=pk)
+        serializer = MovieSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+        
+        
+    def delete(self,request):
+        movie = Movie.objects.get(pk=pk)
+        movie.delete()
+        return Response(status= status.HTTP_204_NO_CONTENT)
+        
+
+After updating this views we need to update urls 
+
+In urls we need to keep as_view() or else we will get error
+from django.urls import path, include 
+#from watchlist_app.api.views import movie_list,movie_details
+from watchlist_app.api.views import MovieListAV,MovieDetailAV
+#from watchlist_app import * 
+
+urlpatterns = [
+    path('list/', MovieListAV.as_view(),name='movie-list'),
+    path('<int:pk>',MovieDetailAV.as_view(),name = 'movie-details')
+]
+
+We have to pk in arguments in individual moviews methods 
+
+Next lets see Generic views 
+Model serializer 
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+VALIDATION
+
+3 type of validations are present 
+
+->Field level (means checking only field level, whether duplicate is present or level)
+-> object level (if we want to check particular object(single record in this case))
+->validator
+
+We use validators in serializers and add in serializers.py 
+
+Field level validation:-
+
+    #the below is field level validation particular column in table
+    def validate_name(self,value):
+        
+        if len(value) < 2:
+            raise serializers.ValidationError("Name is too short!")
+        else:
+            return value 
+
+Object level Validation :-
+
+    #Object level validation
+    def validate(self, data):
+        if data['name'] == data['description']:
+            raise serializers.ValidationError("Title and description should be diffwerent")
+        else:
+            return data  
+validators:-
+def name_length(value):
+    if len(value) < 2:
+        raise serializers.ValidationError("Name is too short!")
+
+
+#This serializers will map all values
+#We will add validations, add methods etc inside this 
+class MovieSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only = True)
+    name = serializers.CharField(validators = [name_length])
+
+
+---------------------------------------------------------------------------------------------------------------------------------------
+Serializer Fields and core Arguments 
+
+API--> Serializer FIELDS --> CORE arguments(see side)
+
+Suppose if our client don't want to have access or write the fields, 
+
+See the core arguments 
+Where we write sql queries instead of models , we need this serial fields 
+
+----------------------------------------------------------------------------------------------------------------------------------------
+
+Model Serializer
+
+Till now we have seen model serializer and normal serializer,
+@api_view in functions used as decorators and APIView in class views
+
+class MovieSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Movie
+        #instea=d of all we can pass particular columns
+        #fields = "__all__", orselse we can use exclude = ['active']
+        #fields = ['id','name','description']
+        fields = "__all__"
+    
+    #Object level validation
+    def validate(self, data):
+        if data['name'] == data['description']:
+            raise serializers.ValidationError("Title and description should be diffwerent")
+        else:
+            return data  
+        
+    #the below is field level validation particular column in table
+    def validate_name(self,value):
+        
+        if len(value) < 2:
+            raise serializers.ValidationError("Name is too short!")
+        else:
+            return value 
+        
+-----------------------------------------------------------------------------------------------------------------------------
+
+#Custom Serializer Fields 
+
+we already have some fields mentioned in models but if we want to  
+with the existing fields if we want caluculate something 
+like calculating the length of name 
+
+In some cases automatic ratings or time duration etc in this cases we can use this 
+Here we need not define this fields in models we overwriye it 
+
+len_name = serializers.SerializerMethodField() --> as variable in class 
+
+down inside the same class we define the field as method operation it is going to do
+
+
+    def get_len_name(self,object):
+        length = len(object.name)
+        return length 
+
+----------------------------------------------------------------------------------------------------------------------------------
+Updating models 
+
+Till now we have seen model database Moview with 3 fields.., now we will delete it and reshape it 
+
+In models.py 
+
+from django.db import models
+
+# Create your models here.
+class StreamPlatform(models.Model):
+    name = models.CharField(max_length=30)
+    about = models.CharField(max_length=150)
+    website = models.URLField(max_length=100)
+    
+    def __str__(self):
+        return self.name 
+
+class WatchList(models.Model):
+    title = models.CharField(max_length=50)
+    storyline = models.CharField(max_length=200)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.title
+
+
+
+in views.py 
+from rest_framework.response import Response
+#from rest_framework.decorators import api_view
+from rest_framework.views import APIView
+from watchlist_app.models import StreamPlatform,WatchList
+from watchlist_app.api.serializers import WatchListSerializer,StreamPlatformSerializer
+from rest_framework import status 
+
+
+#Updated model serializer views
+class StreamPlatformAV(APIView):
+    
+    def get(self,request):
+        platform = StreamPlatform.objects.all()
+        serializer = StreamPlatformSerializer(platform,many = True)
+        return Response(serializer.data)
+    
+    def post(self,request):
+        serializer = StreamPlatformSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors)
+
+
+#Class Based View
+class WatchListAV(APIView):
+    
+    def get(self,request):
+        movies = WatchList.objects.all()
+        serialzer = WatchListSerializer(movies, many = True)
+        return Response(serialzer.data)
+    
+    def post(self,request):
+        serializer = WatchListSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors)
+        
+        
+class WatchDetailAV(APIView):
+    
+    def get(self,request,pk):
+        try:
+            movie = WatchList.objects.get(pk=pk)
+        except WatchList.DoesNotExist:
+            return Response({'Error': 'Not found'},status=status.HTTP_404_NOT_FOUND)    
+        
+        serializer = WatchListSerializer(movie)
+        return Response(serializer.data)
+        
+        
+    def put(self,request,pk):
+        movie = WatchList.objects.get(pk=pk)
+        serializer = WatchListSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+        
+        
+    def delete(self,request,pk):
+        movie = WatchList.objects.get(pk=pk)
+        movie.delete()
+        return Response(status= status.HTTP_204_NO_CONTENT)
+        
+             
+    
+
+'''
+#Function based class
+@api_view(['GET','POST'])
+def movie_list(request):
+    if request.method == 'GET':
+        
+        movies = Movie.objects.all()
+        serializer = MovieSerializer(movies, many=True)
+        return Response(serializer.data)
+    
+    if request.method == 'POST':
+        #Get data from user
+        serializer = MovieSerializer(data=request.data)
+        if serializer.is_valid():  #if data is valid we will send data or else error 
+            serializer.save()
+            #The data we are getting below validated_data is because of return in create function in serializers.py
+            return Response(serializer.data)
+        
+        else:
+            return Response(serializer.errors)
+        
+        
+#We can't perform POST operation here because we are using individual element here
+@api_view(['GET','PUT','DELETE'])
+def movie_details(request,pk):
+
+    if request.method == 'GET':
+        try:
+            movie = Movie.objects.get(pk=pk)
+        except Movie.DoesNotExist:
+            return Response({'Error': 'Movie not found'},status=status.HTTP_404_NOT_FOUND)    
+        
+        serializer = MovieSerializer(movie)
+        return Response(serializer.data)
+    
+    if request.method == 'PUT':
+        #Here we update 
+        #patch means any one can be updated but in put all to rewrite
+        movie = Movie.objects.get(pk=pk)
+        #the above is required or else if we refresh it will come back to old value 
+        serializer = MovieSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+            
+        
+    if request.method == 'DELETE':
+        movie = Movie.objects.get(pk=pk)
+        movie.delete()
+        #if we deleted something we will get response in the form of status code
+        return Response(status= status.HTTP_204_NO_CONTENT)
+        
+    
+
+'''
+Before views.py we define this 
+in serializers.py
+class WatchListSerializer(serializers.ModelSerializer):
+    #len_name = serializers.SerializerMethodField()
+    
+    
+    class Meta:
+        model = WatchList
+        #instea=d of all we can pass particular columns
+        #fields = "__all__", orselse we can use exclude = ['active']
+        #fields = ['id','name','description']
+        fields = "__all__"
+        
+        
+class StreamPlatformSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = StreamPlatform
+        fields = "__all__"
+
+
+As a practise create views for StreamPlatformdetail as we defined for watchlistdetail
+
+---------------------------------------------------------------------------------------------------------------------
+
+Django Relationships
+
+3 types of relationships to to create between models
+one-to-one
+one-to-many
+many-to-many 
+See django documentations for better understanding 
+
+in models.py 
+
+from django.db import models
+
+# Create your models here.
+class StreamPlatform(models.Model):
+    name = models.CharField(max_length=30)
+    about = models.CharField(max_length=150)
+    website = models.URLField(max_length=100)
+    
+    def __str__(self):
+        return self.name 
+
+class WatchList(models.Model):
+    title = models.CharField(max_length=50)
+    storyline = models.CharField(max_length=200)
+    platform = models.ForeignKey(StreamPlatform,on_delete=models.CASCADE,related_name="watchlist")
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.title
+-------------------------------------------------------------------------------------------------------------------------
+NESTED Serializers 
+
+Before we had created relation ship in models using foreign key
+
