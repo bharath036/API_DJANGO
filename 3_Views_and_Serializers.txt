@@ -633,5 +633,73 @@ class WatchList(models.Model):
 -------------------------------------------------------------------------------------------------------------------------
 NESTED Serializers 
 
-Before we had created relation ship in models using foreign key
+Before this,we had created relation ship in models using foreign key
+
+See serializer relationships in DRF document 
+
+in serializers.py added this 
+
+class StreamPlatformSerializer(serializers.ModelSerializer):
+    #To see the platform containg that movies , what movies it has 
+    #One streaming platform can have any number of movies but one movie has one streaming platform
+    watchlist = WatchListSerializer(many=True,read_only=True)
+    
+    class Meta:
+        model = StreamPlatform
+        fields = "__all__"
+
+---------------------------------------------------------------------------------------------------------------------------------
+Serializer Relations 
+---------------------------------------------------------
+Hyperlinked Model serializer 
+
+It helps us to access hyperlink at any point 
+
+Hyperlink is similar to model serializer
+
+----------------------------------------------------------------------------------------------------------
+Serializer Relation 
+
+From here onwards we will see about generic views 
+Lets add a new feature in models.py which is reviews table 
+
+class Review(models.Model):
+    rating = models.PositiveBigIntegerField(validators=[MinValueValidator(1),MaxValueValidator(5)])
+    description = models.CharField(max_length=200,null=True)
+    watchlist = models.ForeignKey(WatchList,on_delete=models.CASCADE,related_name="reviews")
+    active = models.BooleanField(default=True)
+    created = models.DateTimeField(auto_now_add=True)
+    update = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return str(self.rating) + " *" + self.watchlist.title
+
+So we register this model in admin and we accessed from there and added records
+
+Now we need to access this information, we need to write views, serializers
+
+
+Then we created a serializer for this model 
+ReviewSerializer 
+by importing review model to serializers.py and created a serializer 
+
+Now relationship for that serializer in watchlist serializer
+
+class WatchListSerializer(serializers.ModelSerializer):
+    #len_name = serializers.SerializerMethodField()
+    
+    reviews = ReviewSerializer(many=True, read_only = True)
+    class Meta:
+        model = WatchList
+        #instea=d of all we can pass particular columns
+        #fields = "__all__", orselse we can use exclude = ['active']
+        #fields = ['id','name','description']
+        fields = "__all__"
+
+Now we need to views logic 
+we need to write reviews in 2 parts 
+first one is to get list of all reviews 
+second thing is accessing the reviews individually
+
+instead of APIView in classes we will use Generic views 
 

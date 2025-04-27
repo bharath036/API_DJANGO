@@ -2,8 +2,15 @@
 #First step we will map by rest framework 
 
 from rest_framework import serializers
-from watchlist_app.models import WatchList,StreamPlatform
+from watchlist_app.models import WatchList,StreamPlatform,Review 
 
+class ReviewSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = Review 
+        fields = "__all__"
+    
+    
 #Modelserializer have create,update all things, we need not create update,create methods manually as previously
 #For validators we need to add inside class separately as this model serializer won't take care of it
 #Here we see about model serializer 
@@ -20,6 +27,12 @@ class WatchListSerializer(serializers.ModelSerializer):
         
         
 class StreamPlatformSerializer(serializers.ModelSerializer):
+    #To see the platform containg that movies , what movies it has 
+    #One streaming platform can have any number of movies but one movie has one streaming platform
+    #watchlist = WatchListSerializer(many=True,read_only=True)
+    #serializer relations down line
+    watchlist = serializers.StringRelatedField(many=True)
+    #or else if we want only primay key that also we can return, or hyperlink also
     
     class Meta:
         model = StreamPlatform
