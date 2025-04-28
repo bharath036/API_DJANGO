@@ -171,3 +171,265 @@ Function Based views --> @api_view()
 Class Based Views --> APIView --> Generic views, Mixins, Concrete View Classes, ViewSets 
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Understanding APIs and Django REST Framework
+
+## What is an API?
+An **API (Application Programming Interface)** acts as a middleman, enabling communication between two applications or systems.
+
+### Examples:
+- **Uber & Google Maps:** Uber uses Google Maps API for location services.
+- **Restaurant Analogy:**
+  - **Client:** You
+  - **API:** Waiter
+  - **Server:** Kitchen
+
+## Types of APIs
+| Type      | Description                                              | Example                         |
+|-----------|----------------------------------------------------------|---------------------------------|
+| Private   | Used within an organization                              | Internal APIs                   |
+| Partner   | Shared between business partners                         | Uber using Google Maps API      |
+| Public    | Open to external developers                              | OpenWeather, CoinMarketCap API  |
+
+## Why Use APIs?
+- Reuse backend across platforms.
+- Integrate third-party services.
+- Avoid redundant database setups.
+
+## Data Formats
+- **JSON** (Preferred)
+- **XML**
+
+## URL Structure in APIs
+Example:
+```
+https://api.movielist.com/movies/           # List all movies
+https://api.movielist.com/movies/127/       # Specific movie details
+https://api.movielist.com/movies/127/reviews/?limit=20  # Limited reviews
+```
+- **Base URL:** `https://api.movielist.com`
+- **Endpoint:** `/movies/127/reviews/`
+- **Query Params:** `?limit=20`
+
+---
+
+# REST API (Representational State Transfer)
+REST is an architectural style with rules for designing scalable APIs.
+
+## Key REST Principles
+1. **Endpoints**
+2. **HTTP Methods (CRUD):**
+   - GET, POST, PUT/PATCH, DELETE
+3. **Headers & Status Codes** (`200 OK`, `404 Not Found`)
+4. **Data Format:** JSON
+
+---
+
+# Django API Development
+
+## Basic API without DRF
+Example `views.py`:
+```python
+from django.http import JsonResponse
+from .models import Movie
+
+def movie_list(request):
+    movies = Movie.objects.all()
+    data = {'movies': list(movies.values())}
+    return JsonResponse(data)
+
+def movie_details(request, pk):
+    movie = Movie.objects.get(pk=pk)
+    data = {
+        'name': movie.name,
+        'description': movie.description,
+        'active': movie.active
+    }
+    return JsonResponse(data)
+```
+
+## Limitations:
+- Manual JSON handling.
+- No built-in validation.
+
+---
+
+# Django REST Framework (DRF)
+- Simplifies API creation.
+- Provides serialization, authentication, and browsable APIs.
+
+## Setup
+```bash
+pip install djangorestframework
+```
+Add `'rest_framework'` to `INSTALLED_APPS`.
+
+## Serialization
+| Process         | Description                                    |
+|-----------------|------------------------------------------------|
+| Serialization   | Model ➜ Python Dict ➜ JSON                    |
+| Deserialization | JSON ➜ Python Dict ➜ Model                    |
+
+## Example Serializer
+```python
+from rest_framework import serializers
+from .models import Movie
+
+class MovieSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Movie
+        fields = '__all__'
+```
+
+## Function-Based View Example
+```python
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
+@api_view(['GET'])
+def movie_list(request):
+    movies = Movie.objects.all()
+    serializer = MovieSerializer(movies, many=True)
+    return Response(serializer.data)
+```
+
+---
+
+# API Testing Tools
+- **DRF Browsable API**
+- **Postman**
+- **HTTPie**
+
+---
+
+# Advanced DRF Concepts
+- Generic Views & Mixins
+- ViewSets & Routers
+- Authentication (Token, JWT)
+- Pagination & Filtering
+- API Versioning
+
+---
+
+For detailed documentation, visit: [Django REST Framework](https://www.django-rest-framework.org/)
+------------------------------------------------------------------------------------------------------------------------------------------------
+
+# Django REST Framework - Understanding Serializers
+
+## What is a Serializer?
+A **serializer** in Django REST Framework (DRF) converts complex data types (like Django models) into JSON format for APIs, and vice versa.
+
+### Why Do We Need Serializers?
+- To translate database objects into a format (JSON) that web/mobile apps can understand.
+- To validate and process incoming data before saving it to the database.
+
+---
+
+## Real-Life Analogy
+**Waiter = Serializer**
+- Translates your request to the kitchen (database) and brings back your order in a way you understand.
+
+---
+
+## Serialization vs Deserialization
+| Process           | Purpose                                      |
+|-------------------|----------------------------------------------|
+| **Serialization** | Convert Django Model ➔ JSON                  |
+| **Deserialization** | Convert JSON ➔ Validate ➔ Django Model     |
+
+---
+
+## Complete Example: Movie API
+
+### 1. models.py
+```python
+from django.db import models
+
+class Movie(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    rating = models.FloatField()
+
+    def __str__(self):
+        return self.name
+```
+
+### 2. serializers.py
+```python
+from rest_framework import serializers
+from .models import Movie
+
+class MovieSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Movie
+        fields = '__all__'
+```
+
+### 3. views.py
+```python
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .models import Movie
+from .serializers import MovieSerializer
+
+@api_view(['GET', 'POST'])
+def movie_list(request):
+    if request.method == 'GET':
+        movies = Movie.objects.all()
+        serializer = MovieSerializer(movies, many=True)
+        return Response(serializer.data)
+
+    if request.method == 'POST':
+        serializer = MovieSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+```
+
+### 4. urls.py
+```python
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('movies/', views.movie_list, name='movie-list'),
+]
+```
+
+---
+
+## Testing the API
+- **GET** ➔ `http://127.0.0.1:8000/movies/`
+- **POST** ➔ Send JSON:
+```json
+{
+  "name": "Interstellar",
+  "description": "Sci-fi exploration of space and time.",
+  "rating": 9.0
+}
+```
+
+---
+
+## Custom Validation Example
+```python
+class MovieSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Movie
+        fields = '__all__'
+
+    def validate_rating(self, value):
+        if value > 10 or value < 0:
+            raise serializers.ValidationError("Rating must be between 0 and 10.")
+        return value
+```
+
+---
+
+## Tools for API Testing
+- **Postman**
+- **DRF Browsable API**
+
+---
+
+For more info, visit: [Django REST Framework Docs](https://www.django-rest-framework.org/)

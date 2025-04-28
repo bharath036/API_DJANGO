@@ -703,3 +703,180 @@ second thing is accessing the reviews individually
 
 instead of APIView in classes we will use Generic views 
 
+------------------------------------------------------------------------------------------------------------------------------
+
+Generic views and Mixins 
+
+2nd method in class based views --> MIXINS 
+
+from rest_framework we need to import Mixins 
+
+Mixins are used to perform common tasks --> performs CRUD operations --> need not want to define crud functions in views (like we defined previously)
+
+.list 
+.create(request,*args,**kwarfs) --> post 
+like this we have see documentation 
+
+We have created class view using generic class like below 
+from rest_framework import status 
+from rest_framework import mixins,generics
+
+
+#We created this reviewlist class , mixins import followed by this we imported Generics
+class ReviewList(mixins.ListModelMixin,
+                 mixins.CreateModelMixin,
+                 generics.GenericAPIView):
+    
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer 
+    
+    def get(self,request,*args,**kwargs):
+            return self.list(request,*args,**kwargs)
+        
+    def post(self,request,*args,**kwargs):
+        return self.create(request,*args,**kwargs)
+
+Then we created a url for this 
+
+    path('review',ReviewList.as_view(),name='review-list'),
+    path('review/<int:pk>',ReviewDetail.as_view(),name='review-detail')
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+URL Structure
+
+
+    #the below url reviews for a particular movie
+    path('stream/<int:pk>/review',StreamPlatformDetailAV.as_view(),name='stream-detail'),
+    
+    #for individual review
+    path('review/<int:pk>',ReviewDetail.as_view(),name='review-detail')
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CONCRETE VIEW CLASSES 
+
+We will import this from generic classes 
+
+see for generics.py and see the definitions 
+To avoid to define post, get like that we import this classes and use them to modify them 
+
+Comment reviewlist, ReviewDetail --> 2 classes and now we use Concrete classes 
+
+class ReviewList(generics.ListCreateAPIView):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+
+Just above lines are enough .., no need to define the post,get requests 
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Overwrite queryset
+
+class ReviewList(generics.ListCreateAPIView):
+    #the below gives all reviews 
+    #queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    
+    def get_queryset(self):
+        pk = self.kwargs['pk']
+        Review.objects.filter(watchlist=pk)
+    
+
+        #first url below for reviews for particular movie
+    path('stream/<int:pk>/review',ReviewList.as_view(),name='review-list'),
+    path('stream/review<int:pk>/',ReviewDetail.as_view(),name='review-detail'),
+
+post request 
+
+class ReviewCreate(generics.CreateAPIView):
+    serializer_class = ReviewSerializer
+    
+    def perform_create(self,serializer):
+        pk = self.kwargs.get('pk')
+        movie = WatchList.objects.get(pk=pk)
+        
+        serializer.save(watchlist=movie)
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ViewSets and Routers
+
+from past lectures we reduced our code by using different views 
+functions views, class based views, generic views,mixins etc 
+
+By using this viewsets we are combining list and details views --> instead of defining 2 different classes we use this viewsets
+
+class StreamPlatform(viewsets.ViewSet):
+    
+    def list(self, request):
+        queryset = StreamPlatform.objects.all()
+        serializer = StreamPlatformSerializer(queryset,many=True)
+        return Response(serializer.data)
+    
+    def retrieve(self,request,pk=None):
+        queryset = StreamPlatform.objects.all()
+        watchlist = get_object_or_404(queryset,pk=pk)
+        serializer = StreamPlatformSerializer(StreamPlatform)
+        return Response(serializer.data)
+
+After defining views we will create routers which is helpful instead of creating 2 urls in urls.py we can do this in one url 
+
+From above we are using using same name for class and model class so we get error., we changed the class name see below
+
+'''
+#The below viewsets has several methods 
+class StreamPlatformVS(viewsets.ViewSet):
+    
+    def list(self, request):
+        queryset = StreamPlatform.objects.all()
+        serializer = StreamPlatformSerializer(queryset,many=True)
+        return Response(serializer.data)
+    
+    def retrieve(self,request,pk=None):
+        queryset = StreamPlatform.objects.all()
+        watchlist = get_object_or_404(queryset,pk=pk)
+        serializer = StreamPlatformSerializer(StreamPlatform)
+        return Response(serializer.data)
+
+Using viewsets and routers we are handling one single url instead of multiple urls and reducing code
+
+from rest_framework.routers import DefaultRouter
+
+
+router = DefaultRouter()
+router.register('stream',StreamPlatformVS, basename = 'streamplatform')
+ 
+ -------------------------------------------------------------------------------------------------------------------------------------------------
+ ModelViewSets
+
+#The below viewsets has several methods (VS we used in class name means viewsets)
+class StreamPlatformVS(viewsets.ViewSet):
+    
+    def list(self, request):
+        queryset = StreamPlatform.objects.all()
+        serializer = StreamPlatformSerializer(queryset,many=True)
+        return Response(serializer.data)
+    
+    def retrieve(self,request,pk=None):
+        queryset = StreamPlatform.objects.all()
+        watchlist = get_object_or_404(queryset,pk=pk)
+        serializer = StreamPlatformSerializer(StreamPlatform)
+        return Response(serializer.data)
+    
+    #post request  oprion
+    def create(self,request):
+        serializer = StreamPlatformSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors)
+
+
+Model viewsets 
+#viewset class 
+class StreamPlatformVS(viewsets.ModelViewSet):
+    queryset = StreamPlatform.objects.all()
+    serializer_class = StreamPlatformSerializer 
