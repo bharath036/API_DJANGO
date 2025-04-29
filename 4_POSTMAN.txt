@@ -1,0 +1,83 @@
+#POSTMAN AND PROJECT UPDATE 
+
+In postman we will send request and check whether it's working or not 
+http://127.0.0.1:8000/watch/stream/
+
+suppose if we give the request url which is not there then it return 404 error --> which is not present
+
+http://127.0.0.1:8000/watch/stream/9
+
+
+we can also update or post data in bodu --> raw --> here we can paste and modify data and sent it so it can be modified or created based
+on the method we had choosen.
+
+----------------------------------------------------------------------------------------------------------------------------------------------------
+
+USER MODEL 
+
+From now onwards we will make changes and move forward 
+Now in models.py 
+
+Till now we don't know who is writting reviews .., we will add user model here onwards 
+We had imported user model and used in our review model see below code we added this user model as foreign key 
+from django.contrib.auth.models import User
+
+class Review(models.Model):
+    review_user = models.ForeignKey(User,on_delete=models.CASCADE)
+    rating = models.PositiveBigIntegerField(validators=[MinValueValidator(1),MaxValueValidator(5)])
+    description = models.CharField(max_length=200,null=True)
+    watchlist = models.ForeignKey(WatchList,on_delete=models.CASCADE,related_name="reviews")
+    active = models.BooleanField(default=True)
+    created = models.DateTimeField(auto_now_add=True)
+    update = models.DateTimeField(auto_now=True)
+
+After this we need to add it in serializer
+
+Here we had problem that the same user can add review multiple times which is to be avoided
+another problem is review edit --> http://127.0.0.1:8000/stream/review/1 --> we get the review 
+if any one access the review, anyone can aceess it --> this also need to be solved
+
+
+
+class ReviewCreate(generics.CreateAPIView):
+    serializer_class = ReviewSerializer
+    
+    def get_queryset(self):
+        return Review.objects.all()
+    
+    def perform_create(self,serializer):
+        pk = self.kwargs.get('pk')
+        movie = WatchList.objects.get(pk=pk)
+        
+        review_user = self.request.user 
+        review_queryset = Review.objects.filter(watchlist=movie,review_user=review_user)
+        
+        if review_queryset.exists():
+            raise ValidationError("You have already reviewd this movie!")
+        
+        serializer.save(watchlist=movie,review_user=review_user)
+
+we need to define get_queryset() method also --> else we will get error 
+
+Now one user will review a movie only once for a particular movie 
+
+Next we will see permission and authentication because now any user can see any page and modify it 
+
+----------------------------------------------------------------------------------------------------------------------------------
+
+Temporary Login and Logout 
+
+
+We will see about permissions and authentication --> before this we need to see about user 
+
+If we see admin panel --> see in users --> there you will see about permissions of users --> Active, staff status ,superuser status 
+
+
+In admin panel we can create a user --> create and save --> then after this we can see only active in permissions --> if we give superuser as true then we can login to admin panel 
+or else we can't
+
+Lets see about temporary login in django 
+
+ path('api-auth',include('rest_framework.urls')) --> by adding this urls in main urls.py file --> in watchmate --> urls.py 
+ After this if we access to any api we wil see the logout option
+ We have to login again --> then we can login using user but user can't login to admin panel --> in admin only superuser can login

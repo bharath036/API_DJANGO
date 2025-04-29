@@ -880,3 +880,5 @@ Model viewsets
 class StreamPlatformVS(viewsets.ModelViewSet):
     queryset = StreamPlatform.objects.all()
     serializer_class = StreamPlatformSerializer 
+
+--------------------------------------------------------------------------------------------
