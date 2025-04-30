@@ -9,8 +9,8 @@ from rest_framework import generics
 from rest_framework import viewsets
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import ValidationError
-
-
+from rest_framework.permissions import IsAuthenticated,IsAuthenticatedOrReadOnly
+from watchlist_app.api.permissions import AdminOrReadOnly,ReviewUserOrReadOnly
 
 
 class ReviewCreate(generics.CreateAPIView):
@@ -25,9 +25,17 @@ class ReviewCreate(generics.CreateAPIView):
         
         review_user = self.request.user 
         review_queryset = Review.objects.filter(watchlist=movie,review_user=review_user)
-        
+        #if anyone is reviewed we get below error
         if review_queryset.exists():
             raise ValidationError("You have already reviewd this movie!")
+        
+        if movie.number_rating == 0:
+            movie.avg_rating = serializer.validated_data['rating']
+        else: #we need to calculate rating old and new rating average
+            movie.avg_rating = (movie.avg_rating + serializer.validated_data['rating'])/2
+            
+        movie.number_rating = movie.number_rating +1
+        movie.save()
         
         serializer.save(watchlist=movie,review_user=review_user)
         
@@ -36,12 +44,16 @@ class ReviewList(generics.ListAPIView):
     #the below gives all reviews 
     #queryset = Review.objects.all()
     serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly] #only authenticated user can use this
     
     def get_queryset(self):
         pk = self.kwargs['pk']
         Review.objects.filter(watchlist=pk)
     
 class ReviewDetail(generics.RetrieveUpdateDestroyAPIView):
+    #permission_classes = [IsAuthenticatedOrReadOnly]
+    #permission_classes = [AdminOrReadOnly]
+    permission_classes = [ReviewUserOrReadOnly]
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
 

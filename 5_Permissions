@@ -1,0 +1,185 @@
+If we are using any apps.., we need to restrict somethings 
+for different cases.., different scenarios 
+
+First thing we can apply in settings.py 
+
+Then adding to a object (in views.py).., which restricts to open that url like login etc 
+
+IsAuthenticated --> only logged in user can access the data 
+
+If we add below in settings.py .., without login we can't access info inside the API
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ]
+}
+
+
+But if we want to some conditions not for all then we need to create object level permission 
+In which we add in the views.py of that particular url 
+
+We can add IsAdminUser etc we can add like this below for particular level
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAdminUser',
+    ]
+}
+
+Observer above
+
+Now coming to object level permission
+in case of class based view --> we need to import then 
+
+add in class permission_classes = [IsAuthenticated] --> inside class 
+
+
+class ReviewList(generics.ListAPIView):
+    #the below gives all reviews 
+    #queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticated] #only authenticated user can use this
+    
+    def get_queryset(self):
+        pk = self.kwargs['pk']
+        Review.objects.filter(watchlist=pk)
+
+from rest_framework.permissions import IsAuthenticated
+
+But review detail we can access if we dont add that line for restriction of permission 
+For most E-commerce services we will add like this object level permissions
+
+permission_classes = [IsAuthenticatedOrReadOnly] --> this means authenticated user can edit but remaining users can only read it
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+Custom Permissions
+
+Before if we are creating permissions we are importing it 
+
+Now in case of custom permissions we need to it and import it
+
+In api create permission.py file --> we will do all tasks and custom permissions
+
+ permission_classes = [AdminOrReadOnly] --> in views.py we added 
+ before that we created a class in permissions.py file and imported
+
+ #Here we will create such that if any user is admin he can access, edit,read .., if any 
+#other user he can only read 
+#we can refer the document and import it.., see custom permissions
+
+from rest_framework import permissions 
+
+
+class AdminOrReadOnly(permissions.IsAdminUser):
+    
+    def has_permission(self, request, view):
+        #admin_permission = super.has_permission(request,view)
+        admin_permission = bool(request.user and request.user.is_staff)
+        return request.method == "GET" or admin_permission
+
+By the above only admin can edit it after he login 
+
+Anyone can access but we want
+If we login as review owner then he can edit it or any any other user he can read only 
+
+class ReviewUserOrReadOnly(permissions.BasePermission):
+    
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True 
+        else:
+            #if any other request other than get request 
+            return obj.review_user == request.user
+
+in views that.py we will use it like this
+
+ permission_classes = [ReviewUserOrReadOnly]
+
+
+------------------------------------------------------------------------------------------------------
+CUSTOM CALCULATION
+
+Lets add new fields in models.py file 
+We don't have overall average review ratings 
+
+Before that lets modify urls
+
+    path('<int:pk>/reviews',ReviewList.as_view(),name='review-list'),
+    path('<int:pk>/review-create',ReviewCreate.as_view(),name='review-create'),
+
+in models lets add total number of reviews/ratings , average ratings
+
+class WatchList(models.Model):
+    title = models.CharField(max_length=50)
+    storyline = models.CharField(max_length=200)
+    platform = models.ForeignKey(StreamPlatform,on_delete=models.CASCADE,related_name="watchlist")
+    active = models.BooleanField(default=True)
+    avg_rating = models.FloatField(default=0)
+    number_rating = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.title
+
+Then migrage and modify views for logic, no need to change seriak=lizers.py as we kept all --> gives all fields
+class ReviewCreate(generics.CreateAPIView):
+    serializer_class = ReviewSerializer
+    
+    def get_queryset(self):
+        return Review.objects.all()
+    
+    def perform_create(self,serializer):
+        pk = self.kwargs.get('pk')
+        movie = WatchList.objects.get(pk=pk)
+        
+        review_user = self.request.user 
+        review_queryset = Review.objects.filter(watchlist=movie,review_user=review_user)
+        #if anyone is reviewed we get below error
+        if review_queryset.exists():
+            raise ValidationError("You have already reviewd this movie!")
+        
+        if movie.number_rating == 0:
+            movie.avg_rating = serializer.validated_data['rating']
+        else: #we need to calculate rating old and new rating average
+            movie.avg_rating = (movie.avg_rating + serializer.validated_data['rating'])/2
+            
+        movie.number_rating = movie.number_rating +1
+        movie.save()
+        
+        serializer.save(watchlist=movie,review_user=review_user)
+
+
+http://127.0.0.1:8000/watch/2/review-create 
+
+
+#below to check average and number of ratings
+http://127.0.0.1:8000/watch/2
+
+HTTP 200 OK
+Allow: GET, PUT, DELETE, HEAD, OPTIONS
+Content-Type: application/json
+Vary: Accept
+
+{
+    "id": 2,
+    "reviews": [
+        {
+            "id": 4,
+            "review_user": "kalakoti",
+            "rating": 5,
+            "description": "Good Movie!",
+            "active": true,
+            "created": "2025-04-30T14:08:21.497760Z",
+            "update": "2025-04-30T14:08:21.497760Z",
+            "watchlist": 2
+        }
+    ],
+    "title": "Hongkong",
+    "storyline": "Description 1.1",
+    "active": true,
+    "avg_rating": 5.0,
+    "number_rating": 1,
+    "created_at": "2025-04-30T14:06:21.044749Z",
+    "platform": 3
+}
+
+
