@@ -10,7 +10,7 @@ from rest_framework import viewsets
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated,IsAuthenticatedOrReadOnly
-from watchlist_app.api.permissions import AdminOrReadOnly,ReviewUserOrReadOnly
+from watchlist_app.api.permissions import IsAdminOrReadOnly,ReviewUserOrReadOnly
 
 
 class ReviewCreate(generics.CreateAPIView):
@@ -44,7 +44,8 @@ class ReviewList(generics.ListAPIView):
     #the below gives all reviews 
     #queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly] #only authenticated user can use this
+    #permission_classes = [IsAuthenticatedOrReadOnly] #only authenticated user can use this
+    permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         pk = self.kwargs['pk']
@@ -173,6 +174,7 @@ class WatchListAV(APIView):
         
         
 class WatchDetailAV(APIView):
+    permission_classes = [IsAdminOrReadOnly]
     
     def get(self,request,pk):
         try:

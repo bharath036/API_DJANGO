@@ -1,0 +1,150 @@
+To login to any site ., we need id, password --> thet have to send request to endpoint 
+then we ruturn them token --> aftern login they use this token to visit any url of the site 
+Headers --> key, authorization,value --> they will carry this token to each page or else they can't access 
+If user is authenticated then we check whether they are carrimg token or not
+
+USER --> REGISTER --> THEN WE GENERATE TOKEN (new field in database) ., once user is registered they get token 
+Once the user logout ., then this token is destroyed
+After logout then user again need to login., new token is generated 
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ]
+}
+
+Then we need to install a app 
+INSTALLED_APPS = [
+     'rest_framework.authtoken'
+]
+
+Then we need to migrate because we need to create table that is going to store table for each individual
+
+After this when ever we are sending request in postman with reviews url --> then in Headers we have to give 
+KEY, as Authorization , then token as copy from admin panel where we genrated copy that token and then
+Token <token key> then pass we can access 
+
+
+For sending request also in postman or modifying the body even if we logged in we have to pass key, value in headers 
+and also see which user is logged and sending request, nodified content through that user or not 
+
+How to get the token?
+Till now we are creating through admin panel and copying that token and using postman headers
+create a login link --> send a request through postman with username and password --> then link is giving return in form of response in form of token 
+We are storing that token  --> case 1 Login 
+
+Case 2 --> User Registration --> After registration once after getting username, password,email  as well confirm password , then login it and create a token 
+case 3 --> Logout --> destroy the token 
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Part -3 --> Login 
+
+lets create separate app for this user_app 
+we are creating this to keep login,logout,register separately 
+
+We created api folder --> then inside it we created serializers.py, urls.py, views.py 
+
+Then include the url in main urls.py watchmate
+
+   path('account/',include('user_app.api.urls'))
+
+Then we can proceed
+by default django provide obtain auth token 
+
+In urls.py in user_app 
+
+#This will give us access to token if we send username,password
+from rest_framework.authtoken.views import obtain_auth_token
+from django.urls import path 
+
+urlpatterns = [
+    path('login/',obtain_auth_token, name='login'),
+]
+
+
+Then if we pass key, value in body of the url http://127.0.0.1:8000/account/login/
+
+and pass key, value as username --> kalakoti, password --> bharath and send post request we get token in postman 
+
+and if we re-login again same token we wil get until we delete it 
+
+
+send a request and get token --> here all done by obtain_auth_token
+-----------------------------------------------------------------------------------------------------------------------------------------------
+Lets work on registration part 
+
+
+model --> serializers-->view --> then create a url 
+
+After register how to access 
+
+Then after this I had used register user to create creds by passing username,email,password,password2 --> sent as post request
+
+Then after registering passed username,password in body in login url to see the token 
+
+Then once we create account we can login account and we have access to everything
+
+Suppose if we want this token after creating account to login 
+
+---------------------------------------------------------------------------------------------------------------------------------------------
+Next tasks:
+1.Create Token automatically
+2.Return the token with Response 
+---------------------------------------------------------------------------------------------------------------------------------------------
+for every registered user when registered token is created.
+
+By using signals we can auto genarate token for users 
+
+In models.py register 
+
+
+in views see below 
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
+
+from user_app.api.serializers import RegistrationSerializer
+
+
+@api_view(['POST',])
+@permission_classes([AllowAny])          # ← this lets unauthenticated users in
+def registration_view(request):
+    if request.method == 'POST':
+        serializer = RegistrationSerializer(data=request.data)
+        
+        data = {}
+        
+        if serializer.is_valid():
+            account = serializer.save()
+
+            data['response'] = 'Registration successful!'
+            data['username'] = account.username
+            data['email'] = account.email
+            
+            token = Token.objects.get(user=account).key 
+            data['token'] = token
+        else:
+            data = serializer.errors
+        
+        return Response(data) 
+        
+token is created but automatic token is not created
+our token is not created automatically 
+Because we are not calling model that's the reason token is not created automatically 
+
+-----------------------------------------------------------------------------------------------------------
+
+Logout(How to delete a token)
+
+@api_view(['POST',])
+def logout_view(request):
+    
+    if request.method == 'POST':
+        request.user.auth_token.delete()
+        return Response(status=status.HTTP_200_OK)
+    
+
+ path('logout/',logout_view,name='logout')
+ 
+

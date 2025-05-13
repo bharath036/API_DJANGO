@@ -1,0 +1,43 @@
+LLD of this project 
+
+Watchlist --> Name, Description,platform,               Review,
+                                    |                       |
+                                                            |
+                                    |                    Review table 
+                                                            |
+                                                            |
+                                Stream Platform Table      User Table 
+
+
+Filter, Pagination, Throttling --> Next we will see 
+in watchlist app we added IsAdminOrReadOnly in permission classes imported from permissions.py 
+class WatchDetailAV(APIView):
+    permission_classes = [IsAdminOrReadOnly]
+    
+    def get(self,request,pk):
+        try:
+            movie = WatchList.objects.get(pk=pk)
+        except WatchList.DoesNotExist:
+            return Response({'Error': 'Not found'},status=status.HTTP_404_NOT_FOUND)    
+        
+        serializer = WatchListSerializer(movie)
+        return Response(serializer.data)
+        
+        
+    def put(self,request,pk):
+        movie = WatchList.objects.get(pk=pk)
+        serializer = WatchListSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+Based on the table we will add admin previligious
+
+Login as admin
+Then add data for watchlist --> movies, streaming platform
+Then register as User , login and add 2-3 reviews 
+
+-----------------------------------------------------------------------------------------------
+Manual Testing(Part-2)

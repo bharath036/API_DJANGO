@@ -1,0 +1,31 @@
+Intro to AUTHENTICATION
+
+Authentication itself wont allow or disallow incoming request .
+It just prove that a user is logged in or a user is valid user 
+Whether user can access it is or not controlled by permission 
+If we work anything related to restriction, it relate to permission 
+
+Authentication help use to check any incoming request whether a user is identified user or not.
+
+
+This basic authentication is only for testing purpose. 
+
+----------------------------------------------------------------------------------------------------------------
+Basic Authentication 
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
+    ]
+}
+
+--> Add this in settings.py 
+
+Add authentication classes then 
+give url in postman --> then in headers pass key value --> key as Authorization , value as Basic kalakoti:password --> if we pass like this we wil get error as we need to pass as base64encode 
+instead of that pass as Basic <base64encode> --> this works 
+
+
+
+in watchmate --> urls.py 
+    #path('api-auth',include('rest_framework.urls')) --> this temporary login not be used., we will use our own authentication
