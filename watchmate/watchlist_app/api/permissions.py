@@ -27,4 +27,4 @@ class ReviewUserOrReadOnly(permissions.BasePermission):
             return True 
         else:
             #if any other request other than get request 
-            return obj.review_user == request.user
+            return obj.review_user == request.user or request.user.is_staff

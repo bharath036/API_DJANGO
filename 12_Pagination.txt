@@ -1,0 +1,144 @@
+Pagination Part 1 - PageNumber 
+
+When we try to extract too much info we try to devide them into multiple pages 
+Like in Amazon if we search for product we get so many results down we see pages
+
+This help us to reduce load on api and for client also 
+
+We can implement this globally by using this below in settings.py
+
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 100
+}
+
+implement for individual views also 
+They are different types of pagination 
+
+Suppose if have 1000's of movies and we want only some .., we have to implement this pagination
+
+Create a file in watchmate_app --> api --> pagination.py 
+
+pagenumber pagination
+
+from rest_framework.pagination import PageNumberPagination
+
+class WatchListPagination(PageNumberPagination):
+    page_size = 10
+
+
+inside views.py in WatchListGV class view 
+from watchmate_app.api.pagination import * 
+
+add below line 
+
+pagination_class = WatchListPagination
+
+
+Then send a "get" request 
+
+http://127.0.0.1:8000/watch/list2
+
+Then we get result 
+
+We can see the pages 
+
+http://127.0.0.1:8000/watch/list2/?page=3
+
+
+We n=can rename 
+
+page_query_param = 'p' --> see above url page=3 instead of that page we will see p in url 
+
+http://127.0.0.1:8000/watch/list2/?p=3 
+
+page_size_query_param --> this size is taken from client , customize page size 
+
+
+
+Create a file in watchmate_app --> api --> pagination.py 
+
+pagenumber pagination
+
+from rest_framework.pagination import PageNumberPagination
+
+class WatchListPagination(PageNumberPagination):
+    page_size = 10
+    page_query_param = 'p'
+    page_size_query_param = 'size' 
+
+http://127.0.0.1:8000/watch/list2/?size=10  --> client can customize like this  
+
+We can see this in real world --> see coinmarketcap.com --> in this we can select number of 
+elements to see in a page based on client selection 
+
+max_page_size --> max size means which max can be seen even if we select beyond that point , only that max elements we ca see 
+max_page_size = 10 (restricting this for client selection)
+
+http://127.0.0.1:8000/watch/list2/?p=2&size=10
+
+If we want to pass last page --> p=last , p=end --> see documentation 
+
+Based on documentation try
+-------------------------------------------------------------------------------------------------------------------------------------------
+Pagination Part 2 - LimitOffset 
+
+Important when working with client 
+
+Limit is basically size 
+Offset from where we want. An offset is simply the number of records we wish to 
+skip before selecting records 
+
+Request:
+
+GET https://api.example.org/accounts/?limit=100&offset=400
+
+Inside pagination.py file we create class 
+
+#LO-->LIMIT,OFFSET
+class WatchListLOPagination(LimitOffsetPagination):
+    default_limit = 5
+
+Then views.py in WatchListGV function use the above class 
+
+pagination_class = WatchListLOPagination
+
+#When we want to share our api to other client then this is useful offset & pagination.
+---------------------------------------------------------------------------------------------------
+CURSOR Pagination 
+
+We will bring ordering & pagination together 
+
+We dont have pagenumber , we have cursor for next, previous 
+By default we are depending on time, when it was created 
+If we don't have created we may get error
+
+
+class WatchListCPagination(LimitOffsetPagination):
+    page_size = 5
+
+in views.py use this class view where it required 
+
+In the urls we will see ?cursor="hash value"
+We won't see any page number that the cursor pagination
+
+We can also change cursor by assigning variable name to cursor_query_param
+So we can change name 
+
+All this pagination works under viewset or generic classes
+-------------------------------------------------------------------------------------------------
+
+Browsable API 
+
+If anyone can access the api --> http://127.0.0.1:8000/
+
+We can use global setting --> renderJSON
+
+See below link
+https://stackoverflow.com/questions/11898065/how-to-disable-admin-style-browsable-interface-of-django-rest-framework
+
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+    )
+}

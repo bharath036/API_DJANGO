@@ -41,3 +41,78 @@ Then register as User , login and add 2-3 reviews
 
 -----------------------------------------------------------------------------------------------
 Manual Testing(Part-2)
+
+First we logged in using post we sent username, password 
+Then we got token 
+Then we copied that token and sent in headers as authorization Token <> get request 
+and we body we observed empty list 
+
+Then in watch list url we will send movie list 
+http://127.0.0.1:8000/watch/list
+
+Body --> raw --> json 
+{
+   "title": "The Boy",
+   "Story line": "Growth of boy",
+   "platform": 10,
+   "active": true
+}
+passed like this as POST request 
+Before doing this we need to login, then token is created and that token we have to pass in headers as authorization , value as Token <>
+Then we can pass this raw data which can be saved.
+
+Till now we had done logiin as admin and added streaming platforms, watchlist 
+
+Next thing we are going to do is register as new user and add 2-3 reviews 
+
+http://127.0.0.1:8000/account/register/ 
+Then body --> form data --> in this pass username, email, password,password2 then pass it as POST 
+then we get token if we want to access adding watchlist or steamplatform we can't as we don't have
+access only admin can do it 
+
+Now add a review for particular movie 
+http://127.0.0.1:8000/watch/review-create/
+
+we can pass the data as post request too create 
+In views.py we imported and added like this 
+class ReviewCreate(generics.CreateAPIView):
+    serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticated]
+    throttle_class = [ReviewCreateThrottle]
+
+Using Score rate throttle we can do individual for our class instead of creating separate throttling.py file 
+
+import scope rate throttle 
+
+in class pass like this  ReviewDetail
+
+throttle_classes = [scopedratethrottle]
+scoper = 'review-create
+
+We can also limit request by combine 2 classes in views
+
+This is useful for selling an API.., rate limit of requests 
+
+class UserReview(generics.ListAPIView):
+    serializer_class = ReviewSerializer
+    #permission_classes = [IsAuthenticatedOrReadOnly] #only authenticated user can use this
+    #permission_classes = [IsAuthenticated]
+    #throttle_classes = [ReviewListThrottle,AnonRateThrottle]
+    
+    def get_queryset(self):
+        username = self.kwargs['username']
+        return Review.objects.filter(review_user__username=username)
+
+We can access using username
+Ex: If we pass the below url Get request we get response reviews from the particular user shubham 
+http://127.0.0.1:8000/watch/reviews/shubham/ 
+
+
+3rd thing is filtering through query parameter 
+
+everything remains same if we look below url 
+?username=shubham/ --> like this we can access the url 
+
+   def get_queryset(self):
+        username = self.request.query_params.get('username', None)
+        return Review.objects.filter(review_user__username=username)

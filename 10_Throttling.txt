@@ -1,0 +1,70 @@
+Throttling Introduction
+
+It is similar to permission but their is a big difference
+
+When we use permission class we have the power to restrict the access
+either by checking the user if they are authenticated or not or we can customize it 
+
+When we using throttling we have the power to restrict user by the number of requests
+Ex: Medium --> we can send 10-15 request (blog post read ) after that we need to register 
+
+In our app now any number of times they can send requests.., here we are implementing restrictions 
+
+AnonrateThrottle , UserRate throttle 
+
+Annon for annonimous user(not registed user)
+UserRate (registered user)
+
+------------------------------------------------------------------------------------------------------------
+Throttle Rate(Anon and User)
+
+The below we imported in settings.py which we implemented this globally
+Here total we send for all overall classes .., if we give to each view class then 
+we can controll for particular view 
+
+REST_FRAMEWORK = {
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ],
+
+    #Rate limit for anoninous user and register user 
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/day',
+        'user': '1000/day'
+    }
+}
+
+If we want restriction for review .., then 
+we need to import in views
+
+from rest_framework.throttling import UserRateThrottle, AnnonRateThrottle
+Then view classes we add this line
+
+throttle_classes = [UserRateThrottle]
+
+Like this we can restrict the request rates 
+
+-----------------------------------------------------------------------------------------
+How to customize throttle 
+Scoperate throttle
+
+How to restict to view 10 number of review but can add only review per day 
+
+in throttling.py file
+from rest_framework.throttling import UserRateThrottle
+
+class ReviewCreateThrottle(UserRateThrottle):
+    scope = 'review-create'
+
+class ReviewListThrottle(UserRateThrottle):
+    scope = 'review-list'
+
+in settings.py take scope and add limit 
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '1/day',
+        'user': '3/day',
+        'review-create': '1/day',
+        'review-list' : '10/day'
+    }Create a new file in watchlist_app --> api --> throttling.py 
+

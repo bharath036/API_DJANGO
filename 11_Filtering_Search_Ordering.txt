@@ -1,0 +1,130 @@
+Filtering
+
+It extract correct information according to user requirement 
+Filter,search , order content 
+
+If we check amazon url we can get aware of it 
+
+Using queryset --> we will filter 
+Till now we fitered through pk now we can filter using url
+
+We will use generic filtering 
+We will install the package and implement the filter in backend 
+
+Filtering against url
+
+in watchlist_app views.py we will create logic 
+We modified reviewlist class as below with new class name UserReview
+
+class UserReview(generics.ListAPIView):
+    serializer_class = ReviewSerializer
+    #permission_classes = [IsAuthenticatedOrReadOnly] #only authenticated user can use this
+    #permission_classes = [IsAuthenticated]
+    #throttle_classes = [ReviewListThrottle,AnonRateThrottle]
+    
+    def get_queryset(self):
+        username = self.kwargs['username']
+        return Review.objects.filter(review_user=username)
+
+Then define url for this 
+    path('reviews/<str:username>/',UserReview.as_view(),name='user-review-detail'),
+
+
+class UserReview(generics.ListAPIView):
+    serializer_class = ReviewSerializer
+    #permission_classes = [IsAuthenticatedOrReadOnly] #only authenticated user can use this
+    #permission_classes = [IsAuthenticated]
+    #throttle_classes = [ReviewListThrottle,AnonRateThrottle]
+    
+    def get_queryset(self):
+        username = self.kwargs['username']
+        return Review.objects.filter(review_user__username=username)
+
+We can access using username
+Ex: If we pass the below url Get request we get response reviews from the particular user shubham 
+http://127.0.0.1:8000/watch/reviews/shubham/ 
+
+
+3rd thing is filtering through query parameter 
+
+everything remains same if we look below url 
+?username=shubham/ --> like this we can access the url 
+
+   def get_queryset(self):
+        username = self.request.query_params.get('username', None)
+        return Review.objects.filter(review_user__username=username)
+
+    
+    path('reviews/',UserReview.as_view(),name='user-review-detail'),
+
+
+---------------------------------------------------------------------------------------------------------------------
+Filter, search,update 
+
+First install pip install django-filter 
+Then add this package in installed apps 
+
+django_filter
+
+Django filtering will work only on Generic views 
+We cant apply them APIviews 
+
+We can apply them on Listapiview as we are extracting information 
+
+Then drf documentation open Django filter backend 
+
+from django_filters.rest_framework import DjangoFilterBackend in views.py 
+
+In urls we will pass them as parameter ? 
+
+http://127.0.0.1:8000/watch/5/reviews/?review_user__username=shubham
+
+see in params key , value 
+
+After shubham if we add & we will see second key, value 
+
+How to get this for our watchlist.., but in watlist we are using APIviews
+So create a separe class for watchlist using generic views 
+
+http://127.0.0.1:8000/watch/list2/?title=the 
+
+when we are having values which we use to search filter is good 
+Search is used when we don't have clear values 
+
+Refer the documentation for better understanding 
+
+We can also search according to alphabets by giving ?search = a --> like this we can do 
+
+
+
+class UserListView(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    filter_backends = [filters.OrderingFilter]
+    ordering_fields = ['username', 'email']
+
+The client may also specify reverse orderings by prefixing the field name with '-', like so:
+http://example.com/api/users?ordering=-username --> here we used '-' minus means starts from back 
+
+
+Multiple orderings may also be specified:
+http://example.com/api/users?ordering=account,username
+
+-------------------------------------------------------------------------------------------------------------
+class WatchListSerializer(serializers.ModelSerializer):
+    #len_name = serializers.SerializerMethodField()
+    
+    #reviews = ReviewSerializer(many=True, read_only = True)
+    class Meta:
+        model = WatchList
+        #instea=d of all we can pass particular columns
+        #fields = "__all__", orselse we can use exclude = ['active']
+        #fields = ['id','name','description']
+        fields = "__all__"
+
+
+WE COMMENTED REVIEWS LINE IN SERIALIZAERS.PY 
+and we used below line 
+platform = serializers.Charfield(source='platform.name)
+
+

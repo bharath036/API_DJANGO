@@ -8,13 +8,29 @@ from rest_framework import mixins
 from rest_framework import generics
 from rest_framework import viewsets
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated,IsAuthenticatedOrReadOnly
 from watchlist_app.api.permissions import IsAdminOrReadOnly,ReviewUserOrReadOnly
 
+from rest_framework.throttling import UserRateThrottle,AnonRateThrottle
+from watchlist_app.api.throttling import *
+
+class UserReview(generics.ListAPIView):
+    serializer_class = ReviewSerializer
+    #permission_classes = [IsAuthenticatedOrReadOnly] #only authenticated user can use this
+    #permission_classes = [IsAuthenticated]
+    #throttle_classes = [ReviewListThrottle,AnonRateThrottle]
+    
+    def get_queryset(self):
+        username = self.kwargs['username']
+        return Review.objects.filter(review_user__username=username)
+
 
 class ReviewCreate(generics.CreateAPIView):
     serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticated]
+    throttle_class = [ReviewCreateThrottle]
     
     def get_queryset(self):
         return Review.objects.all()
@@ -46,10 +62,15 @@ class ReviewList(generics.ListAPIView):
     serializer_class = ReviewSerializer
     #permission_classes = [IsAuthenticatedOrReadOnly] #only authenticated user can use this
     permission_classes = [IsAuthenticated]
+    throttle_classes = [ReviewListThrottle,AnonRateThrottle]
+    #below says that we are going to filter but for what fields to filter?
+    filter_backends = [DjangoFilterBackend]
+    #what fields to filter
+    filterset_fields = ['review_user__username', 'active']
     
     def get_queryset(self):
         pk = self.kwargs['pk']
-        Review.objects.filter(watchlist=pk)
+        return Review.objects.filter(watchlist=pk)
     
 class ReviewDetail(generics.RetrieveUpdateDestroyAPIView):
     #permission_classes = [IsAuthenticatedOrReadOnly]
@@ -153,6 +174,16 @@ class StreamPlatformDetailAV(APIView):
         platform.delete()
         return Response(status= status.HTTP_204_NO_CONTENT)
 '''
+
+class WatchListGV(generics.ListAPIView):
+    #the below gives all reviews 
+    #queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    #permission_classes = [IsAuthenticatedOrReadOnly] #only authenticated user can use this
+    #below says that we are going to filter but for what fields to filter?
+    filter_backends = [DjangoFilterBackend]
+    #what fields to filter
+    filterset_fields = ['title', 'platform__name']
 
 #Class Based View
 class WatchListAV(APIView):
