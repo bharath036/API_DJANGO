@@ -1,0 +1,312 @@
+If any new changes done in future in order to avoid problems we write testcases
+to avoid code break 
+
+in watchmate_app by default if create app tests.py file is created 
+
+Refer testing document in drf documentation
+
+or we can create test folder like api folder 
+inside that test folder we can create multiple test files 
+Name of file should start with test_ --> like this 
+
+#first let's test register process 
+First lets see about testing of registeration process 
+For this lets write in user_app --> tests.py 
+
+function name should start with test only this are called 
+
+Other than this 2 other methods are called 
+setUp() --> This method is called before the invocation of each test method 
+in the given class.
+tearDown() --> This method is called after the invocation of each test method 
+in given class.
+
+They are few rules we need to understand 
+#from django.test import TestCase
+from django.contrib.auth.models import User 
+from rest_framework.test import APITestCase
+
+from django.urls import reverse
+from rest_framework import status
+
+from rest_framework.authtoken.models import Token 
+# Create your tests here.
+
+class RegisterTestCae(APITestCase):
+
+    #for now let's create one test case
+    #while running testcases django will create new db temporary and run there. There won't be any effect to our test case
+    def test_register(self):
+        data = {
+            "username": "testcase",
+            "email" : "testcase@example.com",
+            "password": "NewPassword",
+            "password2": "NewPassword"
+        }
+
+        #sending client request, in post we pass url, data
+        response = self.client.post(reverse('register'), data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+After running we follow command we get error
+
+(venv) PS D:\DJANGO_API\API_DJANGO\watchmate> python manage.py test
+Found 1 test(s).
+Creating test database for alias 'default'...
+System check identified no issues (0 silenced).
+F
+======================================================================
+FAIL: test_register (watchlist_app.tests.RegisterTestCae.test_register)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\DJANGO_API\API_DJANGO\watchmate\watchlist_app\tests.py", line 25, in test_register        
+    self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 200 != 201
+
+----------------------------------------------------------------------
+Ran 1 test in 0.689s
+
+FAILED (failures=1)
+Destroying test database for alias 'default'...
+
+We get error 
+
+for this we need to change in views.py as previously we kept 200
+
+nOW AFTER MODIFICATION IN views.py see below we get test case pass 
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
+from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from user_app.api.serializers import RegistrationSerializer
+from user_app import models
+
+@api_view(['POST',])
+def logout_view(request):
+    
+    if request.method == 'POST':
+        request.user.auth_token.delete()
+        return Response(status=status.HTTP_200_OK)
+    
+
+@api_view(['POST',])
+@permission_classes([AllowAny])          # ← this lets unauthenticated users in
+def registration_view(request):
+    if request.method == 'POST':
+        serializer = RegistrationSerializer(data=request.data)
+        
+        data = {}
+        
+        if serializer.is_valid():
+            account = serializer.save()
+
+            data['response'] = 'Registration successful!'
+            data['username'] = account.username
+            data['email'] = account.email
+            
+            token = Token.objects.get(user=account).key 
+            data['token'] = token
+            '''
+            refresh = RefreshToken.for_user(account)
+            data['token'] =  {
+                                'refresh': str(refresh),
+                                'access': str(refresh.access_token),
+                                }
+            '''
+        else:
+            data = serializer.errors
+        
+        return Response(data, status=status.HTTP_201_CREATED) 
+        
+(venv) PS D:\DJANGO_API\API_DJANGO\watchmate> python manage.py test
+Found 1 test(s).
+Creating test database for alias 'default'...
+System check identified no issues (0 silenced).
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.589s
+
+OK
+Destroying test database for alias 'default'...
+(venv) PS D:\DJANGO_API\API_DJANGO\watchmate> 
+
+remember filename, method name (tests.py --> RegisterTestCase )
+--> for register we write some test cases inside it 
+
+----------------------------------------------------------------------------------------------------------------------------
+LOGIN AND LOGOUT TESTCASE 
+
+
+#LOGIN & LOGOUT TESTCASE
+
+class LoginLogoutTestCase(APITestCase):
+    #We need to create fake user to test
+    def setUp(self):
+        self.user = User.objects.create_user(username="example",password="NewPassword")
+
+    def test_login(self):
+        data = {
+            "username" : "example",
+            "password" : "NewPassword"
+        }
+
+        response = self.client.post(reverse('login'),data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+pass username,password in data as per our format or else testcase fails 
+
+
+        def test_logout(self):
+        #to logout we need to sendout token 
+        self.token = Token.objects.get(user__username="example")
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+        response = self.client.post(reverse('logout'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+(venv) PS D:\DJANGO_API\API_DJANGO\watchmate> python manage.py test
+Found 3 test(s).
+Creating test database for alias 'default'...
+System check identified no issues (0 silenced).
+...
+----------------------------------------------------------------------
+Ran 3 tests in 2.207s
+
+OK
+Destroying test database for alias 'default'...
+(venv) PS D:\DJANGO_API\API_DJANGO\watchmate> 
+
+---------------------------------------------------------------------------------------------------------------
+Next test cases we will write in watchlist_app for views
+
+STREAM PLATFROM API testing
+
+We will follow sequesnce first lets see streamplatform 
+
+class StreamPlatfromTestCase(APITestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="example",password="NewPassword")
+        self.token = Token.objects.get(user__username=self.user)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+    
+    def test_streamplatfrom_create(self):
+        #sending this data without logged in user
+        #we get error because this here only admin can send request , so we have to pass 403 instead of 201
+        data = {
+            "name": "Netflix",
+            "about": "#1 Streaming Platform",
+            "webside": "https://netflix.com"
+        }
+
+        response = self.client.post(reverse('streamplaform-list'), data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+from django.test import TestCase
+#from django.test import TestCase
+from django.contrib.auth.models import User 
+from rest_framework.test import APITestCase
+
+from django.urls import reverse
+from rest_framework import status
+
+from rest_framework.authtoken.models import Token 
+from watchlist_app.api import serializers
+from watchlist_app import models
+
+class StreamPlatfromTestCase(APITestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="example",password="NewPassword")
+        self.token = Token.objects.get(user__username=self.user)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+    
+        self.stream = models.StreamPlatform.objects.create(name="Netflix",
+                                                           about = "#1 Platform", website = "https://www.netflix.com")
+
+    def test_streamplatfrom_create(self):
+        #sending this data without logged in user
+        #we get error because this here only admin can send request , so we have to pass 403 instead of 201
+        data = {
+            "name": "Netflix",
+            "about": "#1 Streaming Platform",
+            "webside": "https://netflix.com"
+        }
+
+        response = self.client.post(reverse('streamplaform-list'), data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_streamplatform_list(self):
+        response = self.client.get(reverse('streamplatform-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_streamplatform_ind(self):
+        response = self.client.get(reverse('streamplatform-detail',args=(self.stream.id,)))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+--------------------------------------------------------------------------------------------------------------------------
+Next lets discuss WatchList testcase
+
+class WatchListTestCase(APITestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="example",password="NewPassword")
+        self.token = Token.objects.get(user__username=self.user)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+    
+        self.stream = models.StreamPlatform.objects.create(name="Netflix",
+                                                           about = "#1 Platform",
+                                                           website = "https://www.netflix.com")
+        self.watchlist = models.WatchList.objects.create(platform=self.stream,
+                                                         title="Example movie",
+                                                         storyline = "Example Movie",
+                                                         active = True)
+
+    def test_watchlist_create(self):
+        data = {
+            "platform" : self.stream,
+            "title" : "Example Movie",
+            "storyline": "Example Story",
+            "active": True 
+        }
+        response = self.client.post(reverse('movie-list'), data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_watchlist_list(self):
+        response = self.client.get(reverse('movie-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+    def test_watchlist_ind(self):
+        response = self.client.get(reverse('movie-detail',args=(self.watchlist.id)))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+Everything till now is controlled by admin , watchlist,detail,StreamPlatform
+---------------------------------------------------------------------------------------------------
+
+ReviewTestCase
+
+Everything a user can control 
+------------------------------------------------------------------------------------------------------
+
+API Testing - UserTestCase
+
+    def test_review_user(self):
+        response = self.client.get('/watch/review/?username' + self.user.username)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+--------------------------------------------------------------------------------------------------------
+Test Driven Development - TDD
+
+what is TDD?
+
+models then test cases then if we satisfied we can write views 
+
+----------------------------------------------------------------------------------------------------------
+requirements.txt 
+pip freeze --> to see which packages, libraries we are using 
+pip freeze > requirements.txt --> to create requirements.txt file with all packages that we used in our project 
+when we deploy this project on aws, digital ocean etc this requirements.txt file is useful and it knows which packages are used..

@@ -206,6 +206,7 @@ class WatchListAV(APIView):
         
 class WatchDetailAV(APIView):
     permission_classes = [IsAdminOrReadOnly]
+    throttle_classes = [AnonRateThrottle]
     
     def get(self,request,pk):
         try:
